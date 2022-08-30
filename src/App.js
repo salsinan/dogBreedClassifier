@@ -1,23 +1,18 @@
-import logo from './logo.svg';
+import React from "react";
 import './App.css';
+
+const stateMachine = {
+  initial: { on: { next: 'loadingModel' } },
+  loadingModel: { on: { next: 'awaitingUpload' } },
+  awaitingUpload: { on: { next: 'ready' } },
+  ready: { on: { next: 'classifying' } },
+  classifying: { on: { next: 'complete' } },
+  complete: { on: { next: 'awaitingUpload' } }
+}
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
     </div>
   );
 }
