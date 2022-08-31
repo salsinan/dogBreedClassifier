@@ -11,18 +11,25 @@ const stateMachine = {
     awaitingUpload: { on: { next: 'ready' } },
     ready: { on: { next: 'classifying' }, showImage: true },
     classifying: { on: { next: 'complete' } },
-    complete: { on: { next: 'awaitingUpload' }, showImage: true }
+    complete: { on: { next: 'awaitingUpload' }, showImage: true, showResults: true }
   }
 }
 
 const reducer = (currentState, event) =>
   stateMachine.states[currentState].on[event] || stateMachine.initial;
 
+const formatResult = ({ className, probability }) => (
+  <li key={className}>
+    {`${className}: ${(probability * 100).toFixed(2)}%`}
+  </li>
+)
+
 function App() {
   tf.setBackend("cpu");
   const [state, dispatch] = useReducer(reducer, stateMachine.initial);
   let [imageUrl, setImageUrl] = useState(null);
   let [model, setModel] = useState(null);
+  const [results, setResults] = useState([]);
   const inputRef = useRef();
   const imageRef = useRef();
 
@@ -31,7 +38,7 @@ function App() {
   const loadModel = async () => {
     next();
     const mobilenetModel = await mobilenet.load();
-    setModel = mobilenetModel;
+    setModel(mobilenetModel);
     next();
   }
 
@@ -44,20 +51,38 @@ function App() {
     }
   }
 
+  const identify = async () => {
+    next();
+    const classificationResults = await model.classify(imageRef.current);
+    setResults(classificationResults);
+    next();
+  }
+
+  const reset = () => {
+    setResults([]);
+    setImageUrl(null);
+    next();
+  }
+
   const buttonProps = {
     initial: { text: 'Load Model', action: loadModel },
     loadingModel: { text: 'Loading Model...', action: () => {} },
     awaitingUpload: { text: 'Upload Photo', action: () => inputRef.current.click() },
-    ready: { text: 'Identify', action: () => {} },
+    ready: { text: 'Identify', action: identify },
     classifying: { text: 'Identifying', action: () => {} },
-    complete: { text: 'Reset', action: () => {} }
+    complete: { text: 'Reset', action: reset }
   }
 
-  const { showImage = false} = stateMachine.states[state];
+  const { showImage = false, showResults = false} = stateMachine.states[state];
 
   return (
     <div>
       {showImage && <img alt="upload preview" src={imageUrl} ref={imageRef}/>}
+
+      {showResults && <ul>
+        {results.map(formatResult)}
+      </ul>}
+
       <input type="file" accept="image/*" capture="camera" ref={inputRef} onChange={handleUpload}/>
       <button onClick={buttonProps[state].action}>{buttonProps[state].text}</button>
     </div>
